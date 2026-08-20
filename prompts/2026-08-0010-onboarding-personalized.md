@@ -1,4 +1,4 @@
-[ ]
+[x] by OpenAI Codex `gpt-5.6-luna` thinking `low` (ChatGPT account) - Implementation ~$0.1233 5 minutes; Testing a few seconds
 
 [✨🫕] Personalize "Co hoří?" for the company
 
