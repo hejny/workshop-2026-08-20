@@ -12,59 +12,7 @@ export type CompanyItem = {
   kind: ItemKind;
   source?: string;
   verifiedAt?: string;
-  reason?: string;
 };
-
-export type CompanyProfile = {
-  foundedYear: number;
-  isVatPayer: boolean;
-  isIdentifiedPerson: boolean;
-  annualTurnover: number;
-  buysForeignServices: boolean;
-  sellsToEu: boolean;
-  hasEmployees: boolean;
-  plansFirstEmployee: boolean;
-  hasCompanyCar: boolean;
-  hasOfficeLease: boolean;
-  hasMultipleExecutives: boolean;
-  hasAccountant: boolean;
-  usesDomains: boolean;
-  hasImportantSaas: boolean;
-};
-
-export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  foundedYear: new Date().getFullYear(), isVatPayer: false, isIdentifiedPerson: false, annualTurnover: 0,
-  buysForeignServices: false, sellsToEu: false, hasEmployees: false, plansFirstEmployee: false,
-  hasCompanyCar: false, hasOfficeLease: false, hasMultipleExecutives: false, hasAccountant: false,
-  usesDomains: false, hasImportantSaas: false,
-};
-
-export const PERSONALIZATION_STORAGE_KEY = "co-hori-company-profile";
-
-type PersonalizationRule = { itemId: string; isApplicable: (profile: CompanyProfile) => boolean; reason: string };
-
-const PERSONALIZATION_RULES: PersonalizationRule[] = [
-  { itemId: "foreign-services", isApplicable: (profile) => profile.buysForeignServices, reason: "Přidáno, protože jste uvedli, že nakupujete SaaS ze zahraničí." },
-  { itemId: "identified-person", isApplicable: (profile) => profile.buysForeignServices && !profile.isVatPayer, reason: "Přidáno, protože nakupujete zahraniční služby a nejste plátce DPH." },
-  { itemId: "vat-turnover", isApplicable: (profile) => !profile.isVatPayer && profile.annualTurnover >= 1800000, reason: "Přidáno, protože se váš obrat blíží hranici pro povinnou registraci k DPH." },
-  { itemId: "vat-deadline", isApplicable: (profile) => !profile.isVatPayer && profile.annualTurnover >= 2000000, reason: "Přidáno, protože váš obrat dosahuje hranice pro registraci k DPH." },
-  { itemId: "first-employee", isApplicable: (profile) => !profile.hasEmployees && profile.plansFirstEmployee, reason: "Přidáno, protože plánujete přijmout prvního zaměstnance." },
-  { itemId: "payroll", isApplicable: (profile) => profile.hasEmployees || profile.plansFirstEmployee, reason: "Přidáno, protože máte nebo plánujete zaměstnance." },
-  { itemId: "offboarding", isApplicable: (profile) => profile.hasEmployees, reason: "Přidáno, protože máte zaměstnance a je potřeba hlídat jejich přístupy." },
-  { itemId: "car-stk", isApplicable: (profile) => profile.hasCompanyCar, reason: "Přidáno, protože jste uvedli, že máte firemní auto." },
-  { itemId: "car-insurance", isApplicable: (profile) => profile.hasCompanyCar, reason: "Přidáno, protože jste uvedli, že máte firemní auto." },
-  { itemId: "domain", isApplicable: (profile) => profile.usesDomains, reason: "Přidáno, protože používáte vlastní firemní domény." },
-  { itemId: "domains", isApplicable: (profile) => profile.usesDomains, reason: "Přidáno, protože používáte vlastní firemní domény." },
-  { itemId: "saas", isApplicable: (profile) => profile.hasImportantSaas || profile.buysForeignServices, reason: "Přidáno, protože používáte důležité SaaS předplatné." },
-  { itemId: "contracts", isApplicable: (profile) => profile.hasOfficeLease, reason: "Přidáno, protože máte kancelář nebo nájemní smlouvu." },
-  { itemId: "registry", isApplicable: (profile) => profile.hasMultipleExecutives, reason: "Přidáno, protože má firma více jednatelů." },
-];
-
-export function getPersonalizedItems(profile: CompanyProfile): CompanyItem[] {
-  const reasons = new Map(PERSONALIZATION_RULES.filter((rule) => rule.isApplicable(profile)).map((rule) => [rule.itemId, rule.reason]));
-  const alwaysVisible = new Set(["tax-registration", "accounting", "data-box", "data-notifications", "fiction-delivery", "pay-invoices", "issued-invoices", "monthly-docs", "corporate-tax", "pay-tax", "statements", "collection", "bank-access", "insurance", "ssl", "backups"]);
-  return COMPANY_ITEMS.filter((item) => alwaysVisible.has(item.id) || reasons.has(item.id)).map((item) => ({ ...item, reason: reasons.get(item.id) }));
-}
 
 export const CATEGORIES = ["Vše", "Založení firmy", "Účetnictví", "Daně", "DPH", "Datová schránka", "Úřady", "Zaměstnanci", "Obchodní rejstřík", "Smlouvy", "Banka a cashflow", "GDPR a data", "IT a bezpečnost", "Domény a předplatná", "Firemní auta a majetek"];
 
