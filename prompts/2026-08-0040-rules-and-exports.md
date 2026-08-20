@@ -1,0 +1,45 @@
+[-]
+
+[✨🥀] Make legal and company rules maintainable and safe
+
+- Add metadata to predefined legal, tax and administrative rules.
+- A rule may contain:
+    - source title
+    - source URL
+    - date when the information was last verified
+    - short explanation
+    - whether the rule is legal, tax, recommended or operational
+- Never present an old rule as unquestionably current.
+- If a predefined legal or tax rule has not been verified for a long time, visually warn the user:
+    - `"Toto pravidlo může být zastaralé - ověřte aktuální stav."`
+- Add local JSON export of:
+    - company profile
+    - tasks
+    - resolved tasks
+    - custom tasks
+    - notes
+- Add JSON import.
+- Imported data must be validated before replacing the current data.
+- Invalid or corrupted imported data must NEVER destroy existing data.
+- Ask for confirmation before replacing data.
+- Version the export format so it can evolve in the future.
+- Add tests for:
+    - valid import
+    - malformed JSON
+    - missing required properties
+    - unsupported values
+    - incompatible version
+    - corrupted data
+- Perform a code review focused on:
+    - possible data loss
+    - incorrect deadline calculations
+    - incorrect urgency calculations
+    - dangerous assumptions in tax and legal rules
+    - duplicated domain logic
+    - missing tests
+    - maintainability
+- Do not change functionality during the review.
+- After the review, fix all high and medium severity findings.
+- Run all automated tests before considering the task complete.
+- Keep in mind the DRY principle.
+- Do a proper analysis of the current functionality before implementing.
