@@ -316,6 +316,16 @@ body { background: var(--dashboard-cream); color: #18211e; }
 @media (max-width: 800px) { .container { width:min(100% - 28px, 1000px); } .dashboard-header { min-height:65px; } .dashboard-header-actions { gap:8px; } .help-button { display:none; } .dashboard-main { padding-top:38px; } .welcome-row { align-items:flex-start; flex-direction:column; margin-bottom:25px; } .welcome-row .button { width:100%; } .summary-grid { grid-template-columns:repeat(2,1fr); margin-bottom:38px; } .section-heading { align-items:stretch; flex-direction:column; } .search-box { width:100%; } .obligation-grid { grid-template-columns:repeat(2,1fr); } }
 @media (max-width: 520px) { .company-pill { display:none; } .product-tagline { display:none; } .welcome-row h1 { font-size:2.15rem; } .summary-grid { gap:8px; } .summary-card { min-height:117px; padding:14px; } .summary-card strong { font-size:1.4rem; } .summary-card div:nth-child(2) { display:block; } .summary-card div:nth-child(2) span { display:block; margin-top:2px; } .obligation-grid { grid-template-columns:1fr; } .obligation-card { min-height:0; } }
 
+.urgency-label { margin-left:auto; border-radius:999px; padding:4px 7px; font-size:.58rem; font-weight:800; white-space:nowrap; }
+.urgency-label-calm { background:#e8f5ed; color:#39815f; }
+.urgency-label-warming { background:#fff4d9; color:#a6782e; }
+.urgency-label-burning { background:#fff0e5; color:#c75b37; }
+.urgency-label-critical { background:#ffe9e5; color:#d64d38; }
+.urgency-reason { display:flex; gap:5px; min-height:30px; margin-bottom:10px; color:#6c7d72; font-size:.68rem; line-height:1.35; }
+.urgency-reason svg { flex:0 0 auto; color:#e16b51; }
+.urgency-score { color:#728178; font-size:.65rem; }
+.summary-yellow { background:#fff4d9; color:#b07c25; }
+
 .floating-agent-trigger:hover {
   transform: translateY(-2px);
   box-shadow: 0 18px 42px rgba(17, 24, 39, 0.27);

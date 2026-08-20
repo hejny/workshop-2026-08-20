@@ -7,7 +7,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint .",
-        "test": "npm run lint && npm run typecheck",
+        "test": "npm run lint && npm run typecheck && vitest run",
         "typecheck": "tsc --noEmit",
         "check": "npm run lint && npm run typecheck",
         "coder:generate-boilerplates": "npx ptbk coder generate-boilerplates --count 5*1 --template ./prompts/templates/common.md",
@@ -30,6 +30,7 @@
         "@types/react-dom": "latest",
         "eslint": "latest",
         "eslint-config-next": "latest",
-        "typescript": "latest"
+        "typescript": "latest",
+        "vitest": "^4.1.11"
     }
 }
