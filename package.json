@@ -1,35 +1,36 @@
 {
-  "name": "promptbook-starter",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck",
-    "coder:generate-boilerplates": "npx ptbk coder generate-boilerplates --count 5*1 --template ./prompts/templates/common.md",
-    "coder:add": "npx ptbk coder add --template ./prompts/templates/common.md",
-    "coder:run": "npx ptbk coder run --harness openai-codex --model gpt-5.6-terra --thinking-level max --agent agents/developer.book --context AGENTS.md --test-before yes-and-fix",
-    "coder:verify": "npx ptbk coder verify"
-  },
-  "dependencies": {
-    "leaflet": "1.9.4",
-    "lucide-react": "0.536.0",
-    "next": "latest",
-    "ptbk": "^0.114.0-14",
-    "react": "latest",
-    "react-dom": "latest"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "latest",
-    "@types/leaflet": "1.9.21",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "eslint": "latest",
-    "eslint-config-next": "latest",
-    "typescript": "latest"
-  }
+    "name": "promptbook-starter",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint .",
+        "test": "npm run lint && npm run typecheck",
+        "typecheck": "tsc --noEmit",
+        "check": "npm run lint && npm run typecheck",
+        "coder:generate-boilerplates": "npx ptbk coder generate-boilerplates --count 5*1 --template ./prompts/templates/common.md",
+        "coder:add": "npx ptbk coder add --template ./prompts/templates/common.md",
+        "coder:run": "npx ptbk coder run --harness openai-codex --model gpt-5.6-terra --thinking-level max --agent agents/developer.book --context AGENTS.md --test-before yes-and-fix",
+        "coder:verify": "npx ptbk coder verify"
+    },
+    "dependencies": {
+        "leaflet": "1.9.4",
+        "lucide-react": "0.536.0",
+        "next": "latest",
+        "ptbk": "^0.114.0-14",
+        "react": "latest",
+        "react-dom": "latest"
+    },
+    "devDependencies": {
+        "@eslint/eslintrc": "latest",
+        "@types/leaflet": "1.9.21",
+        "@types/node": "latest",
+        "@types/react": "latest",
+        "@types/react-dom": "latest",
+        "eslint": "latest",
+        "eslint-config-next": "latest",
+        "typescript": "latest"
+    }
 }
