@@ -9,6 +9,9 @@ RULE
 Keep in mind the DRY _(don't repeat yourself)_ principle.
 
 RULE
+The app must be responsive for all device sizes and work in both light and dark mode. 
+
+RULE
 Keep in mind the SOLID principles.
 
 RULE
