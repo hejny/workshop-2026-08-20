@@ -4,6 +4,7 @@ import type {
     ObligationRisk,
     ObligationSeverity,
     ObligationStatus,
+    RuleType,
 } from '@/lib/company-obligations';
 
 export const TASK_ORIGINS = ['template', 'generated', 'user'] as const;
@@ -29,6 +30,11 @@ export type Task = {
     risks?: ObligationRisk[];
     status?: ObligationStatus;
     source?: string;
+    sourceTitle?: string;
+    sourceUrl?: string;
+    verifiedAt?: string;
+    explanation?: string;
+    ruleType?: RuleType;
 };
 
 export type TaskDraft = Omit<Task, 'id' | 'isResolved' | 'origin' | 'status'>;

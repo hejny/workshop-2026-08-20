@@ -20,6 +20,14 @@ export type CompanyCategory = (typeof COMPANY_CATEGORIES)[number];
 export type ObligationSeverity = 'critical' | 'important' | 'routine';
 export type ObligationStatus = 'open' | 'in-progress' | 'done';
 export type ObligationRisk = 'fine' | 'financial-loss' | 'operational-problem';
+export type RuleType = 'legal' | 'tax' | 'recommended' | 'operational';
+export type RuleMetadata = {
+    sourceTitle?: string;
+    sourceUrl?: string;
+    verifiedAt?: string;
+    explanation?: string;
+    ruleType: RuleType;
+};
 export type CompanyObligation = {
     id: string;
     title: string;
@@ -31,6 +39,10 @@ export type CompanyObligation = {
     status: ObligationStatus;
     source?: string;
     verifiedAt?: string;
+    sourceTitle?: string;
+    sourceUrl?: string;
+    explanation?: string;
+    ruleType?: RuleType;
     isLegal: boolean;
     risks?: ObligationRisk[];
 };
@@ -127,7 +139,7 @@ export function getPersonalizedObligations(answers: CompanyOnboardingAnswers): P
     }).map((obligation) => ({ ...obligation, reason: getReason(obligation.id, answers) }));
 }
 
-export const COMPANY_OBLIGATIONS: CompanyObligation[] = [
+const PREDEFINED_COMPANY_OBLIGATIONS: CompanyObligation[] = [
     {
         id: 'tax-registration',
         title: 'Přihlásit s.r.o. k dani z příjmů právnických osob',
@@ -454,3 +466,34 @@ export const COMPANY_OBLIGATIONS: CompanyObligation[] = [
         isLegal: false,
     },
 ];
+
+function getDefaultRuleType(obligation: CompanyObligation): RuleType {
+    if (obligation.isLegal) return obligation.category === 'Daně' || obligation.category === 'DPH' ? 'tax' : 'legal';
+    return obligation.category === 'Účetnictví' || obligation.category === 'Banka a cashflow'
+        ? 'operational'
+        : 'recommended';
+}
+
+/**
+ * Predefined rules deliberately keep provenance optional: an absent verification
+ * date is treated as unverified by the UI instead of being presented as current.
+ */
+export const COMPANY_OBLIGATIONS: CompanyObligation[] = PREDEFINED_COMPANY_OBLIGATIONS.map((obligation) => ({
+    ...obligation,
+    sourceTitle: obligation.sourceTitle ?? obligation.source,
+    explanation: obligation.explanation ?? obligation.description,
+    ruleType: obligation.ruleType ?? getDefaultRuleType(obligation),
+}));
+
+export const RULE_STALE_AFTER_DAYS = 180;
+
+export function isRuleStale(obligation: Pick<CompanyObligation, 'isLegal' | 'ruleType' | 'verifiedAt'>, referenceDate = new Date()) {
+    if (obligation.ruleType !== 'legal' && obligation.ruleType !== 'tax' && !obligation.isLegal) return false;
+    if (!obligation.verifiedAt) return true;
+    const czechDate = obligation.verifiedAt.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);
+    const verifiedDate = czechDate
+        ? new Date(Number(czechDate[3]), Number(czechDate[2]) - 1, Number(czechDate[1]))
+        : new Date(obligation.verifiedAt.includes('T') ? obligation.verifiedAt : `${obligation.verifiedAt}T00:00:00`);
+    if (Number.isNaN(verifiedDate.getTime())) return true;
+    return referenceDate.getTime() - verifiedDate.getTime() > RULE_STALE_AFTER_DAYS * 86_400_000;
+}

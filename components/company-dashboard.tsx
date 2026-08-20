@@ -1,17 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import {
     AlertTriangle,
     Check,
     ChevronDown,
     Clock3,
     Edit3,
+    FileDown,
     Flame,
+    Link as LinkIcon,
     Plus,
     Search,
     ShieldCheck,
     Trash2,
+    Upload,
     X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +23,7 @@ import {
     COMPANY_CATEGORIES,
     DEFAULT_ONBOARDING_ANSWERS,
     getPersonalizedObligations,
+    isRuleStale,
     type CompanyCategory,
     type CompanyOnboardingAnswers,
     type ObligationSeverity,
@@ -44,6 +48,7 @@ import {
     type DashboardTask,
     type UrgencyFilter,
 } from '@/lib/urgency-engine';
+import { createExportPayload, parseImportJson } from '@/lib/data-transfer';
 
 const STORAGE_KEY = 'co-hori-tasks-v2';
 const PROFILE_KEY = 'co-hori-company-profile-v2';
@@ -289,6 +294,7 @@ function TaskCard({
     onDelete: () => void;
 }) {
     const { task, urgency } = item;
+    const isStaleRule = isRuleStale(task);
     const deadline =
         task.kind === 'conditional'
             ? task.trigger || 'Až nastane situace'
@@ -323,6 +329,13 @@ function TaskCard({
                 </div>
             </div>
             <p>{task.description || 'Bez popisu'}</p>
+            {task.sourceTitle || task.sourceUrl || task.verifiedAt ? (
+                <div className="rule-metadata">
+                    {task.sourceUrl ? <a href={task.sourceUrl} target="_blank" rel="noreferrer"><LinkIcon size={12} /> {task.sourceTitle || task.sourceUrl}</a> : task.sourceTitle ? <span><LinkIcon size={12} /> {task.sourceTitle}</span> : null}
+                    {task.verifiedAt ? <span>Ověřeno: {task.verifiedAt}</span> : null}
+                </div>
+            ) : null}
+            {isStaleRule ? <div className="stale-rule-warning" role="alert"><AlertTriangle size={13} /> Toto pravidlo může být zastaralé - ověřte aktuální stav.</div> : null}
             {task.note ? <div className="task-note">Poznámka: {task.note}</div> : null}
             <div className="urgency-reason">
                 <Flame size={13} /> {urgency.reason}
@@ -356,6 +369,7 @@ export function CompanyDashboard() {
     const [editorTask, setEditorTask] = useState<Task | null | undefined>(undefined);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
     useEffect(() => {
         const animationFrameId = window.requestAnimationFrame(() => {
             const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -429,6 +443,47 @@ export function CompanyDashboard() {
         saveTasks([...tasks, { ...template, id: createTaskId(), isResolved: false, origin: 'template' }]);
         setIsTemplateOpen(false);
     };
+    const exportData = () => {
+        const payload = createExportPayload(tasks, answers);
+        const downloadUrl = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+        const downloadLink = document.createElement('a');
+        downloadLink.href = downloadUrl;
+        downloadLink.download = `co-hori-export-${new Date().toISOString().slice(0, 10)}.json`;
+        downloadLink.click();
+        URL.revokeObjectURL(downloadUrl);
+    };
+    const importData = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        setIsImporting(true);
+        try {
+            const result = parseImportJson(await file.text());
+            if ('error' in result) {
+                window.alert(result.error);
+                return;
+            }
+            if (!window.confirm('Import nahradí aktuální profil a úkoly. Chcete pokračovat?')) return;
+            const previousProfile = window.localStorage.getItem(PROFILE_KEY);
+            const previousTasks = window.localStorage.getItem(STORAGE_KEY);
+            try {
+                window.localStorage.setItem(PROFILE_KEY, JSON.stringify({ answers: result.payload.companyProfile }));
+                window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: result.payload.tasks, answers: result.payload.companyProfile } satisfies StoredData));
+            } catch (storageError) {
+                if (previousProfile === null) window.localStorage.removeItem(PROFILE_KEY);
+                else window.localStorage.setItem(PROFILE_KEY, previousProfile);
+                if (previousTasks === null) window.localStorage.removeItem(STORAGE_KEY);
+                else window.localStorage.setItem(STORAGE_KEY, previousTasks);
+                throw storageError;
+            }
+            setAnswers(result.payload.companyProfile);
+            setTasks(result.payload.tasks);
+        } catch {
+            window.alert('Soubor nelze importovat: data jsou neplatná nebo poškozená.');
+        } finally {
+            setIsImporting(false);
+        }
+    };
     if (!isHydrated) return <div className="app-loading">Načítám váš přehled…</div>;
     const { burningCount, overdueCount, todayCount, thisWeekCount, doneCount } = dashboardSummary;
     return (
@@ -444,6 +499,9 @@ export function CompanyDashboard() {
                     </div>
                 </div>
                 <div className="dashboard-header-actions">
+                    <input className="visually-hidden" id="import-data" type="file" accept="application/json,.json" onChange={importData} disabled={isImporting} />
+                    <label className="button secondary-button" htmlFor="import-data"><Upload size={15} /> Importovat</label>
+                    <Button variant="secondary" onClick={exportData}><FileDown size={15} /> Exportovat</Button>
                     <span className="company-pill">
                         <span className="company-avatar">A</span> Moje firma <ChevronDown size={14} />
                     </span>
