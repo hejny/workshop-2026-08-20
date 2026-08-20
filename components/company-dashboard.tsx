@@ -9,10 +9,13 @@ import {
     Edit3,
     FileDown,
     Flame,
+    Inbox,
     Link as LinkIcon,
     Plus,
+    PartyPopper,
     Search,
     ShieldCheck,
+    Sparkles,
     Trash2,
     Upload,
     X,
@@ -60,6 +63,7 @@ const SEVERITY_LABELS: Record<ObligationSeverity, string> = {
     routine: 'Průběžně',
 };
 type StoredData = { tasks: Task[]; answers: CompanyOnboardingAnswers };
+type MotionType = 'enter' | 'change' | 'resolve' | 'delete';
 
 function getCategoryCount(tasks: DashboardTask[], category: CompanyCategory) {
     return category === 'Vše' ? tasks.length : tasks.filter(({ task }) => task.category === category).length;
@@ -287,11 +291,13 @@ function TaskCard({
     onToggle,
     onEdit,
     onDelete,
+    motionType,
 }: {
     item: DashboardTask;
     onToggle: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    motionType?: MotionType;
 }) {
     const { task, urgency } = item;
     const isStaleRule = isRuleStale(task);
@@ -303,7 +309,7 @@ function TaskCard({
               : task.deadline || 'Bez konkrétního termínu';
     return (
         <Card
-            className={`obligation-card urgency-${urgency.level} ${task.isLegal ? 'is-legal' : ''} ${task.isResolved ? 'is-done' : ''}`}
+            className={`obligation-card urgency-${urgency.level} ${urgency.isOverdue ? 'is-overdue' : ''} ${task.isLegal ? 'is-legal' : ''} ${task.isResolved ? 'is-done' : ''} ${motionType ? `motion-${motionType}` : ''}`}
         >
             <div className="card-topline">
                 <button
@@ -370,6 +376,10 @@ export function CompanyDashboard() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isTemplateOpen, setIsTemplateOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [motion, setMotion] = useState<{ taskId: string; type: MotionType } | null>(null);
+    const [isFilterChanging, setIsFilterChanging] = useState(false);
+    const [isCelebrating, setIsCelebrating] = useState(false);
+    const [onboardingMessage, setOnboardingMessage] = useState<string | null>(null);
     useEffect(() => {
         const animationFrameId = window.requestAnimationFrame(() => {
             const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -388,7 +398,10 @@ export function CompanyDashboard() {
                 } catch {
                     setTasks([]);
                 }
-            } else setTasks(getPersonalizedObligations(loadedAnswers).map(taskFromObligation));
+            } else {
+                setTasks(getPersonalizedObligations(loadedAnswers).map(taskFromObligation));
+                setOnboardingMessage('Přehled je připravený na míru vaší firmě.');
+            }
             setAnswers(loadedAnswers);
             setIsHydrated(true);
         });
@@ -410,6 +423,7 @@ export function CompanyDashboard() {
             JSON.stringify({ tasks: nextTasks, answers: nextAnswers } satisfies StoredData),
         );
         setIsSettingsOpen(false);
+        setOnboardingMessage('Přehled se právě přizpůsobil vašim odpovědím.');
     };
     const dashboardTasks = useMemo(() => getDashboardTasks(tasks), [tasks]);
     const dashboardSummary = useMemo(() => getDashboardSummary(dashboardTasks), [dashboardTasks]);
@@ -428,20 +442,47 @@ export function CompanyDashboard() {
     const openEditor = (task?: Task) => setEditorTask(task ?? null);
     const saveTask = (draft: TaskDraft) => {
         const currentTask = editorTask;
-        if (currentTask)
+        if (currentTask) {
             saveTasks(tasks.map((task) => (task.id === currentTask.id ? { ...currentTask, ...draft } : task)));
-        else saveTasks([...tasks, { ...draft, id: createTaskId(), isResolved: false, origin: 'user' }]);
+            setMotion({ taskId: currentTask.id, type: 'change' });
+        } else {
+            const taskId = createTaskId();
+            saveTasks([...tasks, { ...draft, id: taskId, isResolved: false, origin: 'user' }]);
+            setMotion({ taskId, type: 'enter' });
+        }
         setEditorTask(undefined);
     };
-    const toggleTask = (task: Task) =>
-        saveTasks(tasks.map((item) => (item.id === task.id ? { ...item, isResolved: !item.isResolved } : item)));
+    const toggleTask = (task: Task) => {
+        const nextTasks = tasks.map((item) => (item.id === task.id ? { ...item, isResolved: !item.isResolved } : item));
+        const previousCriticalCount = dashboardTasks.filter(({ task: item, urgency }) => item.id !== task.id && !item.isResolved && urgency.level === 'critical').length;
+        const nextCriticalCount = getDashboardTasks(nextTasks).filter(({ task: item, urgency }) => !item.isResolved && urgency.level === 'critical').length;
+        saveTasks(nextTasks);
+        setMotion({ taskId: task.id, type: task.isResolved ? 'change' : 'resolve' });
+        if (previousCriticalCount > 0 && nextCriticalCount === 0 && !task.isResolved) {
+            setIsCelebrating(true);
+            window.setTimeout(() => setIsCelebrating(false), 4200);
+        }
+    };
     const deleteTask = (task: Task) => {
-        if (window.confirm(`Opravdu smazat položku „${task.title}“?`))
-            saveTasks(tasks.filter((item) => item.id !== task.id));
+        if (window.confirm(`Opravdu smazat položku „${task.title}“?`)) {
+            setMotion({ taskId: task.id, type: 'delete' });
+            window.setTimeout(() => saveTasks(tasks.filter((item) => item.id !== task.id)), 220);
+        }
     };
     const addTemplate = (template: TaskDraft) => {
-        saveTasks([...tasks, { ...template, id: createTaskId(), isResolved: false, origin: 'template' }]);
+        const taskId = createTaskId();
+        saveTasks([...tasks, { ...template, id: taskId, isResolved: false, origin: 'template' }]);
+        setMotion({ taskId, type: 'enter' });
         setIsTemplateOpen(false);
+    };
+    const changeUrgencyFilter = (filter: UrgencyFilter) => {
+        setSelectedUrgencyFilter(filter);
+        setIsFilterChanging(true);
+        window.setTimeout(() => setIsFilterChanging(false), 360);
+    };
+    const pulseFilters = () => {
+        setIsFilterChanging(true);
+        window.setTimeout(() => setIsFilterChanging(false), 360);
     };
     const exportData = () => {
         const payload = createExportPayload(tasks, answers);
@@ -484,7 +525,7 @@ export function CompanyDashboard() {
             setIsImporting(false);
         }
     };
-    if (!isHydrated) return <div className="app-loading">Načítám váš přehled…</div>;
+    if (!isHydrated) return <div className="app-loading"><Flame size={20} /> Načítám váš přehled…</div>;
     const { burningCount, overdueCount, todayCount, thisWeekCount, doneCount } = dashboardSummary;
     return (
         <div className="dashboard-shell">
@@ -523,6 +564,19 @@ export function CompanyDashboard() {
                         <Plus size={16} /> Přidat položku
                     </Button>
                 </section>
+                {onboardingMessage ? (
+                    <div className="onboarding-toast" role="status">
+                        <Sparkles size={16} />
+                        <span>{onboardingMessage}</span>
+                        <button onClick={() => setOnboardingMessage(null)} aria-label="Zavřít oznámení"><X size={14} /></button>
+                    </div>
+                ) : null}
+                {isCelebrating ? (
+                    <div className="celebration-banner" role="status">
+                        <span className="celebration-icon"><PartyPopper size={20} /></span>
+                        <div><strong>Firma zatím nehoří 🎉</strong><span>Všechny kritické položky jsou vyřešené. To je dobrý pocit.</span></div>
+                    </div>
+                ) : null}
                 <section className="summary-grid">
                     <Card className="summary-card summary-critical">
                         <div className="summary-icon">
@@ -591,7 +645,7 @@ export function CompanyDashboard() {
                                 role="tab"
                                 aria-selected={selectedCategory === category}
                                 className={selectedCategory === category ? 'category-tab active' : 'category-tab'}
-                                onClick={() => setSelectedCategory(category)}
+                                onClick={() => { setSelectedCategory(category); pulseFilters(); }}
                             >
                                 {category}
                                 <span>{getCategoryCount(dashboardTasks, category)}</span>
@@ -601,21 +655,21 @@ export function CompanyDashboard() {
                     <div className="status-filters">
                         <span>Filtr:</span>
                         {([['all', 'Všechno'], ['burning', 'Hoří'], ['today', 'Dnes'], ['this-week', 'Tento týden'], ['overdue', 'Po termínu'], ['done', 'Hotovo']] as const).map(([filter, label]) => (
-                            <button key={filter} className={selectedUrgencyFilter === filter ? 'status-filter active' : 'status-filter'} onClick={() => setSelectedUrgencyFilter(filter)}>{label}</button>
+                            <button key={filter} className={selectedUrgencyFilter === filter ? 'status-filter active' : 'status-filter'} onClick={() => changeUrgencyFilter(filter)}>{label}</button>
                         ))}
                         <span className="status-divider">Zdroj:</span>
                         {ORIGIN_FILTERS.map((origin) => (
                             <button
                                 key={origin}
                                 className={selectedOrigin === origin ? 'status-filter active' : 'status-filter'}
-                                onClick={() => setSelectedOrigin(origin)}
+                                onClick={() => { setSelectedOrigin(origin); pulseFilters(); }}
                             >
                                 {ORIGIN_LABELS[origin]}
                             </button>
                         ))}
                     </div>
                 </section>
-                <section className="obligation-grid">
+                <section className={`obligation-grid ${isFilterChanging ? 'is-filter-changing' : ''}`} aria-live="polite">
                     {filteredTasks.map((item) => (
                         <TaskCard
                             key={item.task.id}
@@ -623,10 +677,15 @@ export function CompanyDashboard() {
                             onToggle={() => toggleTask(item.task)}
                             onEdit={() => openEditor(item.task)}
                             onDelete={() => deleteTask(item.task)}
+                            motionType={motion?.taskId === item.task.id ? motion.type : undefined}
                         />
                     ))}
                     {filteredTasks.length === 0 ? (
-                        <div className="empty-state">Nic tu není. Přidejte vlastní položku nebo vyberte šablonu.</div>
+                        <div className="empty-state">
+                            <span className="empty-state-icon"><Inbox size={22} /></span>
+                            <strong>V této části je zatím klid</strong>
+                            <span>Upravte filtr, nebo přidejte položku, kterou chcete pohlídat.</span>
+                        </div>
                     ) : null}
                 </section>
                 <section className="template-section">
