@@ -14,7 +14,20 @@ export type CompanyItem = {
   verifiedAt?: string;
 };
 
+export type WorkshopItem = {
+  id: string;
+  title: string;
+  description: string;
+  schedule: string;
+  href: string;
+};
+
 export const CATEGORIES = ["Vše", "Založení firmy", "Účetnictví", "Daně", "DPH", "Datová schránka", "Úřady", "Zaměstnanci", "Obchodní rejstřík", "Smlouvy", "Banka a cashflow", "GDPR a data", "IT a bezpečnost", "Domény a předplatná", "Firemní auta a majetek"];
+
+export const FOLLOW_UP_WORKSHOPS: WorkshopItem[] = [
+  { id: "prague-follow-up", title: "4. 9. · 10:00–16:00", description: "Exkluzivně maximálně pro 10 lidí v Praze.", schedule: "Navazující workshop", href: "https://www.ptbk.io/ai-supervize-mini?code=webinar-2026-08-20" },
+  { id: "online-follow-up", title: "9. 9. · 13:00–17:00", description: "Online workshop pro maximálně 50 lidí.", schedule: "Navazující workshop", href: "https://www.ptbk.io/ai-supervize-mini?code=webinar-2026-08-20" },
+];
 
 export const COMPANY_ITEMS: CompanyItem[] = [
   { id: "tax-registration", title: "Přihlásit s.r.o. k dani z příjmů právnických osob", description: "Do 15 dnů od vzniku společnosti.", category: "Založení firmy", deadline: "Do 15 dnů od vzniku", severity: "high", status: "urgent", kind: "legal", source: "Finanční správa" },
