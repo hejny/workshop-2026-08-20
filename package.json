@@ -11,10 +11,10 @@
     "check": "npm run lint && npm run typecheck"
   },
   "dependencies": {
-    "@promptbook/components": "latest",
     "leaflet": "1.9.4",
     "lucide-react": "0.536.0",
     "next": "latest",
+    "ptbk": "^0.114.0-14",
     "react": "latest",
     "react-dom": "latest"
   },
