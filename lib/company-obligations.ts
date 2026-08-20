@@ -9,6 +9,96 @@ export type CompanyObligation = {
   id: string; title: string; description: string; category: Exclude<CompanyCategory, "Vše">; deadline: string; severity: ObligationSeverity; status: ObligationStatus; source?: string; verifiedAt?: string; isLegal: boolean;
 };
 
+export type CompanyOnboardingAnswers = {
+  foundedYear: string;
+  isVatPayer: boolean;
+  isIdentifiedPerson: boolean;
+  annualTurnover: string;
+  isBuyingForeignServices: boolean;
+  foreignServiceProviders: string[];
+  isSellingToEuropeanUnion: boolean;
+  hasEmployees: boolean;
+  isPlanningFirstEmployee: boolean;
+  hasCompanyCar: boolean;
+  hasOfficeLease: boolean;
+  hasMultipleExecutives: boolean;
+  hasAccountant: boolean;
+  usesDomains: boolean;
+  hasImportantSaas: boolean;
+};
+
+export type PersonalizedCompanyObligation = CompanyObligation & { reason: string };
+
+export const DEFAULT_ONBOARDING_ANSWERS: CompanyOnboardingAnswers = {
+  foundedYear: "",
+  isVatPayer: false,
+  isIdentifiedPerson: false,
+  annualTurnover: "",
+  isBuyingForeignServices: false,
+  foreignServiceProviders: [],
+  isSellingToEuropeanUnion: false,
+  hasEmployees: false,
+  isPlanningFirstEmployee: false,
+  hasCompanyCar: false,
+  hasOfficeLease: false,
+  hasMultipleExecutives: false,
+  hasAccountant: false,
+  usesDomains: false,
+  hasImportantSaas: false,
+};
+
+const VAT_TURNOVER_WARNING_THRESHOLD = 1_800_000;
+const FOREIGN_SERVICE_REASON = "Přidáno, protože jste uvedli, že nakupujete SaaS nebo jiné služby ze zahraničí.";
+
+function getAnnualTurnover(answers: CompanyOnboardingAnswers) {
+  return Number(answers.annualTurnover.replace(/\s/g, "").replace(",", ".")) || 0;
+}
+
+function getReason(obligationId: string, answers: CompanyOnboardingAnswers) {
+  const reasons: Record<string, string> = {
+    "vat-foreign": FOREIGN_SERVICE_REASON,
+    "vat-identified": answers.isIdentifiedPerson
+      ? "Přidáno, protože jste uvedli, že firma je identifikovanou osobou k DPH."
+      : FOREIGN_SERVICE_REASON,
+    "vat-turnover": getAnnualTurnover(answers) >= VAT_TURNOVER_WARNING_THRESHOLD && !answers.isVatPayer
+      ? "Varování: uvedený obrat se blíží hranici pro povinnou registraci k DPH."
+      : "Přidáno, protože obrat firmy je důležitý pro průběžné hlídání DPH.",
+    "vat-application": "Přidáno jako návazná kontrola pro případ překročení hranice DPH.",
+    "first-employee": "Přidáno, protože firma zatím nemá zaměstnance; seznam zůstává připravený pro první nástup.",
+    payroll: "Přidáno, protože jste uvedli, že firma má zaměstnance.",
+    probation: "Přidáno, protože jste uvedli, že firma má zaměstnance.",
+    "car-stk": "Přidáno, protože jste uvedli, že firma má firemní auto.",
+    "car-insurance": "Přidáno, protože jste uvedli, že firma má firemní auto.",
+    "main-domain": "Přidáno, protože jste uvedli, že firma používá vlastní domény.",
+    saas: "Přidáno, protože jste uvedli, že firma má důležitá SaaS předplatná.",
+    contracts: "Přidáno, protože jste uvedli, že firma má vlastní kancelář nebo nájemní smlouvu.",
+    "registry-changes": "Přidáno, protože jste uvedli, že firma má více jednatelů.",
+    accounting: answers.hasAccountant
+      ? "Přidáno, protože jste uvedli, že firma má účetní nebo daňového poradce."
+      : "Základní položka pro každou firmu.",
+  };
+  return reasons[obligationId] ?? "Základní položka pro každou firmu.";
+}
+
+export function getPersonalizedObligations(answers: CompanyOnboardingAnswers): PersonalizedCompanyObligation[] {
+  const isForeignServicesRelevant = answers.isBuyingForeignServices;
+  const isTurnoverRelevant = !answers.isVatPayer;
+  const isEmployeeRelevant = answers.hasEmployees;
+
+  return COMPANY_OBLIGATIONS.filter((obligation) => {
+    if (["vat-foreign", "vat-identified"].includes(obligation.id)) return isForeignServicesRelevant || answers.isIdentifiedPerson;
+    if (["vat-turnover", "vat-application"].includes(obligation.id)) return isTurnoverRelevant;
+    if (["payroll", "probation"].includes(obligation.id)) return isEmployeeRelevant;
+    if (obligation.id === "first-employee") return !answers.hasEmployees || answers.isPlanningFirstEmployee;
+    if (["car-stk", "car-insurance"].includes(obligation.id)) return answers.hasCompanyCar;
+    if (obligation.id === "main-domain") return answers.usesDomains;
+    if (obligation.id === "saas") return answers.hasImportantSaas;
+    if (obligation.id === "contracts") return answers.hasOfficeLease;
+    if (obligation.id === "registry-changes") return answers.hasMultipleExecutives;
+    return true;
+  }).map((obligation) => ({ ...obligation, reason: getReason(obligation.id, answers) }));
+}
+
 export const COMPANY_OBLIGATIONS: CompanyObligation[] = [
   { id: "tax-registration", title: "Přihlásit s.r.o. k dani z příjmů právnických osob", description: "Po vzniku společnosti ověřit registraci u finančního úřadu.", category: "Založení firmy", deadline: "Do 15 dnů od vzniku", severity: "critical", status: "open", source: "Finanční správa", isLegal: true },
   { id: "accounting", title: "Nastavit účetnictví a předávání dokladů účetní", description: "Domluvit systém pro účtenky, faktury, banku a pravidelný export dokladů.", category: "Účetnictví", deadline: "Při založení firmy", severity: "important", status: "in-progress", isLegal: false },
