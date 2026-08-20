@@ -1,85 +1,38 @@
 "use client";
 
-import {
-  MockedChat,
-  type ChatMessage,
-  type ChatParticipant,
-} from "@promptbook/components";
-import { MessageCircle, X } from "lucide-react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
+import { LoaderCircle, MessageCircle, Send, X } from "lucide-react";
 
-const participants: ChatParticipant[] = [
-  {
-    name: "USER",
-    fullname: "You",
-    isMe: true,
-    color: "#30A8BD",
-  },
-  {
-    name: "AGENT",
-    fullname: "Promptbook Agent",
-    color: "#30BDA8",
-  },
-];
-
-const messages: ChatMessage[] = [
-  {
-    id: "1",
-    sender: "AGENT",
-    content: "Hi. I am the floating Promptbook agent.",
-    isComplete: true,
-  },
-  {
-    id: "2",
-    sender: "AGENT",
-    content: "Use this pattern for support, onboarding, or an app-specific assistant.",
-    isComplete: true,
-  },
-];
+type AssistantMessage = { role: "user" | "assistant"; content: string };
+const INITIAL_MESSAGE: AssistantMessage = { role: "assistant", content: "Ahoj! Vysvětlím vám pojmy z přehledu povinností. Na co se chcete zeptat?" };
 
 export function FloatingAgent() {
   const [isOpen, setIsOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<AssistantMessage[]>([INITIAL_MESSAGE]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  return (
-    <div className="floating-agent">
-      {isOpen ? (
-        <div className="floating-agent-panel">
-          <button
-            className="floating-agent-close"
-            type="button"
-            aria-label="Close agent"
-            onClick={() => setIsOpen(false)}
-          >
-            <X size={18} />
-          </button>
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage || isLoading) return;
+    const nextMessages = [...messages, { role: "user" as const, content: trimmedMessage }];
+    setMessages(nextMessages); setMessage(""); setIsLoading(true);
+    try {
+      const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: nextMessages }) });
+      const result = (await response.json()) as { message?: string; error?: string };
+      if (!response.ok || !result.message) throw new Error(result.error ?? "Odpověď se nepodařila načíst.");
+      setMessages((currentMessages) => [...currentMessages, { role: "assistant", content: result.message ?? "" }]);
+    } catch (error) { setMessages((currentMessages) => [...currentMessages, { role: "assistant", content: error instanceof Error ? error.message : "Odpověď se nepodařila načíst." }]); }
+    finally { setIsLoading(false); }
+  }
 
-          <MockedChat
-            title="Promptbook Agent"
-            layout="STANDALONE"
-            style={{ height: "420px" }}
-            messages={messages}
-            participants={participants}
-            delayConfig={{ blocky: true, showIntermediateMessages: messages.length }}
-            placeholderMessageContent="Ask anything…"
-            appendMessagesLocallyOnSend
-            isFocusedOnLoad={false}
-            isSaveButtonEnabled={false}
-            isCopyButtonEnabled={false}
-            isResettable={false}
-            isPausable={false}
-          />
-        </div>
-      ) : null}
-
-      <button
-        className="floating-agent-trigger"
-        type="button"
-        aria-label="Open Promptbook agent"
-        onClick={() => setIsOpen((value) => !value)}
-      >
-        <MessageCircle size={22} />
-        <span>Ask AI</span>
-      </button>
-    </div>
-  );
+  return <div className="floating-agent">
+    {isOpen && <section className="assistant-panel" aria-label="AI asistent">
+      <header className="assistant-header"><div><strong>AI asistent</strong><span>Vysvětlí pojmy jednoduše</span></div><button className="assistant-close" type="button" aria-label="Zavřít asistenta" onClick={() => setIsOpen(false)}><X size={17} /></button></header>
+      <div className="assistant-messages" aria-live="polite">{messages.map((currentMessage, index) => <p className={`assistant-message ${currentMessage.role}`} key={`${currentMessage.role}-${index}`}>{currentMessage.content}</p>)}{isLoading && <p className="assistant-message assistant"><LoaderCircle className="assistant-loader" size={16} /> Přemýšlím…</p>}</div>
+      <form className="assistant-form" onSubmit={sendMessage}><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Např. Co je identifikovaná osoba?" aria-label="Zpráva pro AI asistenta" disabled={isLoading} /><button type="submit" aria-label="Odeslat zprávu" disabled={isLoading || !message.trim()}><Send size={17} /></button></form>
+    </section>}
+    <button className="floating-agent-trigger" type="button" aria-expanded={isOpen} onClick={() => setIsOpen((currentValue) => !currentValue)}><MessageCircle size={21} /><span>Zeptat se AI</span></button>
+  </div>;
 }

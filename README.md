@@ -11,6 +11,7 @@ Promptbook-branded Next.js starter for small internal tools, demos, product expe
 - `@promptbook/components`
 - Live `BookEditor` example
 - ESLint + TypeScript checks
+- Floating AI assistant for explaining dashboard terms (requires `OPENAI_API_KEY`)
 - LF line endings via `.gitattributes` and `.editorconfig`
 
 ## Start
@@ -21,6 +22,8 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+Set `OPENAI_API_KEY` in the environment before using the assistant. The key is used only by the server-side `/api/assistant` route.
 
 Before committing:
 
