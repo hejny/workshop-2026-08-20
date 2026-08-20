@@ -4,18 +4,13 @@
 - [Web](http://workshop-2026-08-20.ptbk.io/)
 - [Promptbook Coder `ptbk coder`](https://coder.ptbk.io)
 
-
 ## Osnova
-
 
 1. Jak agenta pustit ze řetězu, ale bezpečně.
 2. Jak automatizovat testování/review/quality gates.
 3. Jak správně pracovat s kontextem, Gitem a existujícím projektem.
 
-
-
 1) Jak na agenty delegovat co nejvíce. To znamená, jak se dostat ze stavu, kdy každou jednu dílčí věc babysituju s agentem, k tomu, že mi agent běží dlouhodobě zcela sám. Do tohodle spadají automatické testování, quality checky, pravidla, jak se má agent chovat, co smí a co nesmí dělat, a nějaký systém.
-
 
 2) Používání Gitu a to, proč je dobré mít Git pod kontrolou. Budu ukazovat nějaké základní věci, ale zároveň v čem je velmi mocný revert, proč používám lineární historii, nebo jak skvěle se dá použít git bisect.
 
@@ -23,11 +18,8 @@
 
 ---
 
-4) Data(báze) Jak přistupovat k datům, bezpečnosti, migracím. Zákeřná zákoutí Supabase. Event sourcing. Tabulkové, grafové, nestrukturované databáze. ...
-
+4. Data(báze) Jak přistupovat k datům, bezpečnosti, migracím. Zákeřná zákoutí Supabase. Event sourcing. Tabulkové, grafové, nestrukturované databáze. ...
 
 ## Co dál
 
-- [AI Supervize Mini](https://www.ptbk.io/ai-supervize-mini)
-
-
+- [AI Supervize Mini](https://www.ptbk.io/ai-supervize-mini?code=webinar-2026-08-20)
