@@ -1,4 +1,4 @@
-[ ]
+[-]
 
 [✨🫕] Personalize "Co hoří?" for the company
 
